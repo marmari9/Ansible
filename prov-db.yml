@@ -1,0 +1,33 @@
+---
+- name: Install and configure MongoDB
+  hosts: db
+  become: yes
+  tasks:
+    - name: Import MongoDB public key
+      ansible.builtin.apt_key:
+        url: https://www.mongodb.org/static/pgp/server-7.0.asc
+        state: present
+
+    - name: Add MongoDB repository
+      ansible.builtin.apt_repository:
+        repo: "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse"
+        state: present
+        filename: mongodb-org
+
+    - name: Install MongoDB
+      ansible.builtin.apt:
+        name: mongodb-org
+        state: present
+        update_cache: yes
+
+    - name: Allow connections from any IP
+      ansible.builtin.replace:
+        path: /etc/mongod.conf
+        regexp: 'bindIp: 127.0.0.1'
+        replace: 'bindIp: 0.0.0.0'
+
+    - name: Restart and enable MongoDB
+      ansible.builtin.service:
+        name: mongod
+        state: restarted
+        enabled: yes

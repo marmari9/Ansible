@@ -1,0 +1,45 @@
+---
+- name: Install app dependencies and run app in foreground
+  hosts: web
+  gather_facts: yes
+  become: yes
+
+  tasks:
+    - name: Install required system packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Install Node.js 20 and npm
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        apt-get install -y nodejs
+      args:
+        executable: /bin/bash
+
+    - name: Clone the app repository from GitHub
+      ansible.builtin.git:
+        repo: "https://github.com/marmari9/tech501-sparta-app.git"
+        dest: /home/ubuntu/app
+        version: main
+        force: yes
+
+    - name: Install app dependencies
+      ansible.builtin.command:
+        cmd: npm install
+        chdir: /home/ubuntu/app
+
+    - name: Start the app in the foreground
+      ansible.builtin.shell: "nohup npm start > /dev/null 2>&1 &"
+      args:
+        chdir: /home/ubuntu/app
+
+    - name: Allow traffic on port 3000
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 3000
+        jump: ACCEPT
