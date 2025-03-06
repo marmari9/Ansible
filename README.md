@@ -275,9 +275,9 @@ This playbook installs Node.js, clones an application from GitHub, installs depe
   become: yes
 
   tasks:
-    - name: Install Node.js 18 and npm
+    - name: Install Node.js 20 and npm
       ansible.builtin.shell: |
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         apt-get install -y nodejs
       args:
         executable: /bin/bash
@@ -677,7 +677,17 @@ If Nginx is running, you should see output indicating that the service is **acti
 
 
 
-
+- why keep a seperate playbook for updates and upgrades:
+  - Granular control: 
+    - specific actions: design dedicated tasks within the update/upgrade playbook.
+    - Testing and validation
+  - Modular design:
+    - Reusability: 
+    - Role based approaches: 
+  - Risk Mitigation:
+    - Independent rollouts: can roll back the changes when issues arise
+    - staging environment: update in staging before deploying to production. 
+  - 
 
 
 # Create a playbook that create the app and db :
