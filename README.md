@@ -35,28 +35,199 @@
   - **Assign**: Allocate resources.
   - **Activate**: Deploy and configure infrastructure.
 
-## Ansible
-- A free, open-source automation tool for configuring systems, deploying software, and managing infrastructure.
-- Written in Python.
-- Part of configuration management and orchestration solutions.
+## Ansible Overview
+
+- **Nodes & Modules**:  
+  - Ansible connects to **nodes (hosts)** and pushes out small programs called **modules**.  
+  - Nodes are target endpoints like servers, network devices, or computers.  
+
+- **Modules**:  
+  - Perform automation tasks by defining the desired system state.  
+  - Executed by Ansible and removed afterward.  
+  - Without modules, tasks would require ad-hoc commands or scripts.  
+
+- **Built-in & Custom Modules**:  
+  - Ansible includes built-in modules for common tasks.  
+  - Custom modules can be created in any language that returns JSON (e.g., Python, Ruby).  
+
+- **Agentless Architecture**:  
+  - No software installation required on managed nodes.  
+  - Ansible reads target machines from an **inventory file** (default or custom).  
+
+- **Connection & Authentication**:  
+  - Uses **SSH protocol** to connect and run tasks.  
+  - Default authentication via **SSH keys with ssh-agent**.  
+  - No root login required; can use **su or sudo** as any user.  
+
+- **Execution & Playbooks**:  
+  - Transfers necessary modules to remote machines for execution.  
+  - Uses **human-readable YAML templates** to automate repetitive tasks.  
 
 ### Companies Using Ansible
 - **Tech**: Amazon, Red Hat, IBM.
 - **Finance**: JP Morgan, Goldman Sachs.
 - **Healthcare**: Pfizer, Novartis, GSK.
 
-## Silencing Error Messages in Ansible
-1. Open the configuration file:
-   ```bash
-   sudo nano ansible.cfg
-   ```
-2. Add the following lines:
-   ```ini
-   [defaults]
-   interpreter_python=auto_silent
-   ```
-3. Save and exit (`CTRL+X`, `Y`, `Enter`).
+## Overview of using Ansible in creating a two-tier Architecture:
 
+
+   ![alt text](Ansible.png)
+
+
+# Creating EC2 Instances for Ansible
+
+This section outlines the steps to create and configure EC2 instances for Ansible, including the controller, application node, and database node.
+
+## 1. Create the Ansible Controller Instance
+
+### **Instance Details**
+- **Name**: `tech501-maram-ubuntu-2204-ansible-controller`
+- **Instance Type**: `t3.micro`
+- **Security Group**: Allow SSH (port 22)
+- **Key Pair**: Use the existing AWS key pair
+- **AMI**: `Ubuntu Server 22.04 LTS (Free Tier Eligible)`
+- **User Data**: Leave it blank (no startup scripts)
+
+## 2. Create the Application Target Node Instance
+
+### **Instance Details**
+- **Name**: `tech501-maram-ubuntu-2204-ansible-target-node-app`
+- **Instance Type**: `t3.micro`
+- **Security Group**: Allow SSH (port 22), HTTP (port 80), and port 3000
+- **Key Pair**: Use the same AWS key pair as the controller
+- **AMI**: `Ubuntu Server 22.04 LTS (Free Tier Eligible)`
+- **User Data**: Leave it blank (no startup scripts)
+
+## 3. Create the Database Node Instance
+
+### **Instance Details**
+- **Name**: `tech501-maram-ubuntu-2204-ansible-node-db`
+- **Instance Type**: `t3.micro`
+- **Security Group**: Same as usual for a database (allow SSH and MongoDB ports as needed)
+- **Key Pair**: Use the same AWS key pair as the controller and application node
+- **AMI**: `Ubuntu Server 22.04 LTS (Free Tier Eligible)`
+- **User Data**: Leave it blank (no startup scripts)
+
+## 4. Verify SSH Access
+After launching the instances, verify that you can SSH into each machine:
+```bash
+ssh -i ~/.ssh/your-key.pem ubuntu@your-controller-ip
+ssh -i ~/.ssh/your-key.pem ubuntu@your-app-node-ip
+ssh -i ~/.ssh/your-key.pem ubuntu@your-db-node-ip
+```
+
+## Set up dependincies on the controller instance:
+- 1. SSH to the controller instance:
+```bash
+ssh -i path/to/private/key ubuntu@< Controller Public IP >
+```
+
+- 2. Install Ansible using the following commands:
+
+```bash 
+sudo apt update 
+sudo apt-add-repository -y ppa:ansible/ansible  # updates and upgrade packages
+
+sudo apt-get -y install ansible
+
+ansible --version  # check the ansible versio
+
+cd /etc/ansible   # on this dir there are the hosts, ansible.cfg,roles
+```
+
+## Copying a Private Key to the Target Node using Ansible
+
+## Task Overview
+Copy the private key <private-key> from the controller to the target node (`ec2-instance-app`) inside the `.ssh` directory and set the correct permissions.
+
+## Steps
+
+### 1️. Verify the Private Key Exists on the Controller
+Run the following command on the **controller** to ensure the key exists:
+```bash
+ls -l ~/path/to/private/key
+```
+If the file exists, proceed to the next step.
+
+### 2️. Ensure the `.ssh` Directory Exists on the Target
+Create the `.ssh` directory on the **target node** if it does not exist:
+```bash
+ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode=0700 owner=ubuntu group=ubuntu" --become
+```
+
+### 3️. Copy the Private Key to the Target Node
+Use the `copy` module to transfer the key file:
+```bash
+ansible ec2-instance-app -m copy -a "src=/home/ubuntu/path/to/private/key dest=/home/ubuntu/.ssh/<private-key> mode=0600 owner=ubuntu group=ubuntu" --become
+```
+
+### 4️. Verify the Key is Copied Successfully
+Check if the file exists on the target node:
+```bash
+ansible ec2-instance-app -m shell -a "ls -l ~/.ssh"
+```
+Expected output:
+```
+-r------- 1 ubuntu ubuntu  401 Feb 28 11:16 authorized_keys
+-r------- 1 ubuntu ubuntu 1679 Mar  3 15:59 tech501-maram-key-2.pem
+```
+
+## Summary
+- Verified the private key exists on the controller.
+- Ensured the `.ssh` directory exists on the target node.
+- Copied the key using Ansible’s `copy` module with proper permissions.
+- Verified that the key was successfully copied.
+
+## Connect the controller to the target node:
+- change the hosts file
+```bash
+sudo nano hosts
+
+[web]
+ec2-instance-app ansible_host=34.255.124.208 ansible_user=ubuntu ansible_private_key_file=~/.ssh/tech501-maram-key-2.pem              # update the <public IP address>
+```
+
+- error message with ping:
+ ![alt text](<warning message.png>)
+
+- error message with IP address added of the target node:
+  ![alt text](<second erro.png>)
+
+- successful ping with a pong reply:
+  ![alt text](<web ping.png>)
+
+- removed the error message:
+  ![alt text](<removed error message-1.png>)
+
+- to silence the error message:
+
+```bash
+sudo nano ansible.cfg
+``` 
+- add this to the file:
+  - [defaults]
+    - interpreter_python=auto_silent
+    - ctrl x + y + enter
+
+## Copying a Private Key to a Target Node Using Ansible
+
+### **Steps**
+1. Verify the key exists on the controller:
+   ```bash
+   ls -l ~/.ssh/tech501-maram-key-2.pem
+   ```
+2. Ensure the `.ssh` directory exists on the target:
+   ```bash
+   ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode=0700 owner=ubuntu group=ubuntu" --become
+   ```
+3. Copy the key:
+   ```bash
+   ansible ec2-instance-app -m copy -a "src=/home/ubuntu/.ssh/tech501-maram-key-2.pem dest=/home/ubuntu/.ssh/tech501-maram-key-2.pem mode=0600 owner=ubuntu group=ubuntu" --become
+   ```
+4. Verify the key exists on the target:
+   ```bash
+   ansible ec2-instance-app -m shell -a "ls -l ~/.ssh"
+   ```
 ## Ad-hoc Commands in Ansible
 - Uses the `/usr/bin/ansible` command-line tool to automate single tasks.
 - Not reusable but quick for simple tasks.
@@ -88,75 +259,6 @@
 | Cannot Use Built-in Shell Commands | Commands like `cd` do not persist. |
 | Less Flexible | If shell features are needed, `shell` module must be used. |
 
-## Methods to Perform `apt update` and `apt upgrade` in Ansible
-
-### **Method 1: Using the `command` Module**
-```bash
-ansible app -m command -a "sudo apt-get update"
-ansible app -m command -a "sudo apt-get upgrade -y"
-```
-- Runs system commands directly.
-- Does not support chaining (`&&`).
-- Not idempotent (executes every time).
-
-### **Method 2: Using the `shell` Module**
-```bash
-ansible app -m shell -a "sudo apt-get update && sudo apt-get upgrade -y"
-```
-- Supports chaining (`&&`).
-- Less secure than `command`.
-
-### **Method 3: Using the `apt` Module (Best Practice)**
-```bash
-ansible app -m apt -a "update_cache=yes upgrade=dist" --become
-```
-- Ensures updates only run when necessary.
-- More reliable and secure.
-
-### **Comparison Table**
-| Method  | Supports `&&` | Secure | Idempotent | Recommended |
-|---------|--------------|--------|------------|-------------|
-| `command` | No | Yes | No | No |
-| `shell` | Yes | No | No | No |
-| `apt` | Yes | Yes | Yes | **Yes (best practice)** |
-
-## Copying a Private Key to a Target Node Using Ansible
-
-### **Steps**
-1. Verify the key exists on the controller:
-   ```bash
-   ls -l ~/.ssh/tech501-maram-key-2.pem
-   ```
-2. Ensure the `.ssh` directory exists on the target:
-   ```bash
-   ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode=0700 owner=ubuntu group=ubuntu" --become
-   ```
-3. Copy the key:
-   ```bash
-   ansible ec2-instance-app -m copy -a "src=/home/ubuntu/.ssh/tech501-maram-key-2.pem dest=/home/ubuntu/.ssh/tech501-maram-key-2.pem mode=0600 owner=ubuntu group=ubuntu" --become
-   ```
-4. Verify the key exists on the target:
-   ```bash
-   ansible ec2-instance-app -m shell -a "ls -l ~/.ssh"
-   ```
-
-## Summary
-- Ensured `.ssh` directory exists.
-- Copied the key securely with correct permissions.
-- Verified the key transfer.
-
-
-
-
-
-![alt text](Ansible.png)
-
-
-
-
-
----
-This playbook ensures that the target nodes have an up-to-date system and Nginx installed, following best practices in Ansible automation.
 ---
 # Ansible Playbook: Provision App VM and Run Application
 
@@ -236,112 +338,7 @@ ansible web -m shell -a "curl http://localhost:3000"
 ```
 If the app is running correctly, it should return an expected response.
 
-
-# Set up Ansible controller and the target nodes (app and db): 
-
-
-
-
-
-## Set up dependincies on the controller instance:
-- 1. SSH to the controller instance:
-```bash
-ssh -i path/to/private/key ubuntu@< Controller Public IP >
-```
-
-- 2. Install Ansible using the following commands:
-
-```bash 
-sudo apt update 
-sudo apt-add-repository -y ppa:ansible/ansible  # updates and upgrade packages
-
-sudo apt-get -y install ansible
-
-ansible --version  # check the ansible versio
-
-cd /etc/ansible   # on this dir there are the hosts, ansible.cfg,roles
-```
-
-# Copying a Private Key to the Target Node using Ansible
-
-## Task Overview
-Copy the private key <private-key> from the controller to the target node (`ec2-instance-app`) inside the `.ssh` directory and set the correct permissions.
-
-## Steps
-
-### 1️. Verify the Private Key Exists on the Controller
-Run the following command on the **controller** to ensure the key exists:
-```bash
-ls -l ~/path/to/private/key
-```
-If the file exists, proceed to the next step.
-
-### 2️. Ensure the `.ssh` Directory Exists on the Target
-Create the `.ssh` directory on the **target node** if it does not exist:
-```bash
-ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode=0700 owner=ubuntu group=ubuntu" --become
-```
-
-### 3️. Copy the Private Key to the Target Node
-Use the `copy` module to transfer the key file:
-```bash
-ansible ec2-instance-app -m copy -a "src=/home/ubuntu/path/to/private/key dest=/home/ubuntu/.ssh/<private-key> mode=0600 owner=ubuntu group=ubuntu" --become
-```
-
-### 4️. Verify the Key is Copied Successfully
-Check if the file exists on the target node:
-```bash
-ansible ec2-instance-app -m shell -a "ls -l ~/.ssh"
-```
-Expected output:
-```
--rw------- 1 ubuntu ubuntu  401 Feb 28 11:16 authorized_keys
--rw------- 1 ubuntu ubuntu 1679 Mar  3 15:59 tech501-maram-key-2.pem
-```
-
-## Summary
-- Verified the private key exists on the controller.
-- Ensured the `.ssh` directory exists on the target node.
-- Copied the key using Ansible’s `copy` module with proper permissions.
-- Verified that the key was successfully copied.
-
-This method ensures a **secure and automated** way to transfer SSH keys between servers.
-
-------------------
-
-#
-- change the hosts file
-```bash
-sudo nano hosts
-
-[web]
-ec2-instance-app ansible_host=34.255.124.208 ansible_user=ubuntu ansible_private_key_file=~/.ssh/tech501-maram-key-2.pem              # update the <public IP address>
-```
-
-- error message with ping:
-![alt text](<warning message.png>)
-
-- error message with IP address added of the target node:
-
-![alt text](<second erro.png>)
-
-- successful ping with a pong reply:
-![alt text](<web ping.png>)
-
-- removed the error message:
-![alt text](<removed error message-1.png>)
-
-
-
-- to silence the error message:
-
-```bash
-sudo nano ansible.cfg
-``` 
-- add this to the file:
-  - [defaults]
-    - interpreter_python=auto_silent
-    - ctrl x + y + enter
+------------
 
 ## Update and upgrade target nodes using the ad hoc commands:
 
@@ -729,3 +726,17 @@ If Nginx is running, you should see output indicating that the service is **acti
 ![alt text](<working with reverse proxy.png>)
 
 ![alt text](<posts working with reverse proxy.png>)
+
+
+
+
+# Set a parent host file and set the app and db to children:
+
+![alt text](children_test.png)
+
+
+- ping the parent <test>
+
+![alt text](<test parent ping.png>)
+
+
