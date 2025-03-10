@@ -12,7 +12,15 @@
 - **Reduce configuration errors**: Streamlines error checking.
 - **Iterate on best-practice environments**: Quickly update and refine configurations.
 
-### Tools Used for IaC
+## When & Where to Use IaC
+- **Cloud Environments**: Automating AWS, Azure, and GCP infrastructure.
+- **Hybrid & Multi-Cloud**: Ensuring consistency across platforms.
+- **DevOps Pipelines**: CI/CD automation for infrastructure deployment.
+- **Disaster Recovery**: Quickly redeploy environments in case of failures.
+- **Scalability**: Automating infrastructure scaling based on demand.
+
+## Tools Used for IaC
+- **Terraform**: Declarative infrastructure provisioning tool.
 - **Puppet**: Suitable for large-scale deployments.
 - **Ansible**: Agentless and widely adopted.
 - **Salt**: Another configuration management solution.
@@ -34,44 +42,87 @@
   - **Prepare**: Define infrastructure needs.
   - **Assign**: Allocate resources.
   - **Activate**: Deploy and configure infrastructure.
+- Some **CM tools like Ansible and Puppet** also handle infrastructure provisioning.
 
 ## Ansible Overview
 
-- **Nodes & Modules**:  
-  - Ansible connects to **nodes (hosts)** and pushes out small programs called **modules**.  
-  - Nodes are target endpoints like servers, network devices, or computers.  
+### Nodes & Modules
+- Ansible connects to **nodes (hosts)** and pushes out small programs called **modules**.
+- Nodes are target endpoints like servers, network devices, or computers.
 
-- **Modules**:  
-  - Perform automation tasks by defining the desired system state.  
-  - Executed by Ansible and removed afterward.  
-  - Without modules, tasks would require ad-hoc commands or scripts.  
+### Modules
+- Perform automation tasks by defining the desired system state.
+- Executed by Ansible and removed afterward.
+- Without modules, tasks would require ad-hoc commands or scripts.
 
-- **Built-in & Custom Modules**:  
-  - Ansible includes built-in modules for common tasks.  
-  - Custom modules can be created in any language that returns JSON (e.g., Python, Ruby).  
+### Built-in & Custom Modules
+- Ansible includes built-in modules for common tasks.
+- Custom modules can be created in any language that returns JSON (e.g., Python, Ruby).
 
-- **Agentless Architecture**:  
-  - No software installation required on managed nodes.  
-  - Ansible reads target machines from an **inventory file** (default or custom).  
+### Agentless Architecture
+- No software installation required on managed nodes.
+- Ansible reads target machines from an **inventory file** (default or custom).
 
-- **Connection & Authentication**:  
-  - Uses **SSH protocol** to connect and run tasks.  
-  - Default authentication via **SSH keys with ssh-agent**.  
-  - No root login required; can use **su or sudo** as any user.  
+### Connection & Authentication
+- Uses **SSH protocol** to connect and run tasks.
+- Default authentication via **SSH keys with ssh-agent**.
+- No root login required; can use **su or sudo** as any user.
 
-- **Execution & Playbooks**:  
-  - Transfers necessary modules to remote machines for execution.  
-  - Uses **human-readable YAML templates** to automate repetitive tasks.  
+### Execution & Playbooks
+- Transfers necessary modules to remote machines for execution.
+- Uses **human-readable YAML templates** to automate repetitive tasks.
+
+## Who is Using IaC & Ansible
+
+### Companies Using IaC
+- **Tech**: Amazon, Google, Microsoft.
+- **Finance**: JPMorgan Chase, Goldman Sachs.
+- **Healthcare**: Pfizer, Novartis, GSK.
+- **Retail**: Walmart, Target, eBay.
 
 ### Companies Using Ansible
-- **Tech**: Amazon, Red Hat, IBM.
-- **Finance**: JP Morgan, Goldman Sachs.
-- **Healthcare**: Pfizer, Novartis, GSK.
+- **Tech**: Red Hat, IBM, Facebook.
+- **Finance**: Bank of America, Capital One.
+- **Healthcare**: CVS Health, UnitedHealth Group.
+- **Automotive**: Tesla, Ford, General Motors.
+
+## Ad-hoc Commands in Ansible
+- Uses the `/usr/bin/ansible` command-line tool to automate single tasks.
+- Not reusable but quick for simple tasks.
+- Useful for rarely performed tasks, e.g., shutting down machines before holidays.
+
+### Why Is `ping` an Ad-hoc Command?
+- Runs instantly without a playbook.
+- Does not change system state or configuration.
+- Used for quick connectivity tests.
+
+### What Happens If No Module Is Specified?
+- Ansible defaults to using the **command** module.
+- However, this module does not support shell features like pipes (`|`) or environment variables (`$HOME`).
+
+### Advantages and Disadvantages of Using the `command` Module
+
+#### **Advantages**
+| Advantage | Description |
+|-----------|-------------|
+| Default Module | Used automatically if no module is specified. |
+| Secure Execution | Avoids shell injection risks. |
+| Lightweight | Fast execution without additional overhead. |
+| Cross-Platform | Works across Linux and Unix systems. |
+
+#### **Disadvantages**
+| Disadvantage | Description |
+|-------------|-------------|
+| No Shell Features | Cannot use shell operators like pipes (`|`). |
+| Cannot Use Built-in Shell Commands | Commands like `cd` do not persist. |
+| Less Flexible | If shell features are needed, `shell` module must be used. |
+
+---
 
 ## Overview of using Ansible in creating a two-tier Architecture:
 
 
-   ![alt text](Ansible.png)
+   ![alt text](images/Ansible.png)
 
 
 # Creating EC2 Instances for Ansible
@@ -85,8 +136,8 @@ This section outlines the steps to create and configure EC2 instances for Ansibl
 - **Instance Type**: `t3.micro`
 - **Security Group**: Allow SSH (port 22)
 - **Key Pair**: Use the existing AWS key pair
-- **AMI**: `Ubuntu Server 22.04 LTS (Free Tier Eligible)`
-- **User Data**: Leave it blank (no startup scripts)
+- **AMI**: `Ubuntu Server 22.04 LTS` 
+- **User Data**: Leave it blank 
 
 ## 2. Create the Application Target Node Instance
 
@@ -95,8 +146,8 @@ This section outlines the steps to create and configure EC2 instances for Ansibl
 - **Instance Type**: `t3.micro`
 - **Security Group**: Allow SSH (port 22), HTTP (port 80), and port 3000
 - **Key Pair**: Use the same AWS key pair as the controller
-- **AMI**: `Ubuntu Server 22.04 LTS (Free Tier Eligible)`
-- **User Data**: Leave it blank (no startup scripts)
+- **AMI**: `Ubuntu Server 22.04 LTS`
+- **User Data**: Leave it blank 
 
 ## 3. Create the Database Node Instance
 
@@ -105,8 +156,8 @@ This section outlines the steps to create and configure EC2 instances for Ansibl
 - **Instance Type**: `t3.micro`
 - **Security Group**: Same as usual for a database (allow SSH and MongoDB ports as needed)
 - **Key Pair**: Use the same AWS key pair as the controller and application node
-- **AMI**: `Ubuntu Server 22.04 LTS (Free Tier Eligible)`
-- **User Data**: Leave it blank (no startup scripts)
+- **AMI**: `Ubuntu Server 22.04 LTS`
+- **User Data**: Leave it blank
 
 ## 4. Verify SSH Access
 After launching the instances, verify that you can SSH into each machine:
@@ -150,7 +201,7 @@ ls -l ~/path/to/private/key
 If the file exists, proceed to the next step.
 
 ### 2️. Ensure the `.ssh` Directory Exists on the Target
-Create the `.ssh` directory on the **target node** if it does not exist:
+Create the `.ssh` directory on the **target node**:
 ```bash
 ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode=0700 owner=ubuntu group=ubuntu" --become
 ```
@@ -171,13 +222,6 @@ Expected output:
 -r------- 1 ubuntu ubuntu  401 Feb 28 11:16 authorized_keys
 -r------- 1 ubuntu ubuntu 1679 Mar  3 15:59 tech501-maram-key-2.pem
 ```
-
-## Summary
-- Verified the private key exists on the controller.
-- Ensured the `.ssh` directory exists on the target node.
-- Copied the key using Ansible’s `copy` module with proper permissions.
-- Verified that the key was successfully copied.
-
 ## Connect the controller to the target node:
 - change the hosts file
 ```bash
@@ -188,16 +232,16 @@ ec2-instance-app ansible_host=34.255.124.208 ansible_user=ubuntu ansible_private
 ```
 
 - error message with ping:
- ![alt text](<warning message.png>)
+ ![alt text](<images/warning message.png>)
 
 - error message with IP address added of the target node:
-  ![alt text](<second erro.png>)
+  ![alt text](<images/second erro.png>)
 
 - successful ping with a pong reply:
-  ![alt text](<web ping.png>)
+  ![alt text](<images/web ping.png>)
 
 - removed the error message:
-  ![alt text](<removed error message-1.png>)
+  ![alt text](<images/removed error message-1.png>)
 
 - to silence the error message:
 
@@ -208,141 +252,11 @@ sudo nano ansible.cfg
   - [defaults]
     - interpreter_python=auto_silent
     - ctrl x + y + enter
-
-## Copying a Private Key to a Target Node Using Ansible
-
-### **Steps**
-1. Verify the key exists on the controller:
-   ```bash
-   ls -l ~/.ssh/tech501-maram-key-2.pem
-   ```
-2. Ensure the `.ssh` directory exists on the target:
-   ```bash
-   ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode=0700 owner=ubuntu group=ubuntu" --become
-   ```
-3. Copy the key:
-   ```bash
-   ansible ec2-instance-app -m copy -a "src=/home/ubuntu/.ssh/tech501-maram-key-2.pem dest=/home/ubuntu/.ssh/tech501-maram-key-2.pem mode=0600 owner=ubuntu group=ubuntu" --become
-   ```
-4. Verify the key exists on the target:
-   ```bash
-   ansible ec2-instance-app -m shell -a "ls -l ~/.ssh"
-   ```
-## Ad-hoc Commands in Ansible
-- Uses the `/usr/bin/ansible` command-line tool to automate single tasks.
-- Not reusable but quick for simple tasks.
-- Useful for rarely performed tasks, e.g., shutting down machines before holidays.
-
-### Why Is `ping` an Ad-hoc Command?
-- Runs instantly without a playbook.
-- Does not change system state or configuration.
-- Used for quick connectivity tests.
-
-### What Happens If No Module Is Specified?
-- Ansible defaults to using the **command** module.
-- However, this module does not support shell features like pipes (`|`) or environment variables (`$HOME`).
-
-### Advantages and Disadvantages of Using the `command` Module
-
-#### **Advantages**
-| Advantage | Description |
-|-----------|-------------|
-| Default Module | Used automatically if no module is specified. |
-| Secure Execution | Avoids shell injection risks. |
-| Lightweight | Fast execution without additional overhead. |
-| Cross-Platform | Works across Linux and Unix systems. |
-
-#### **Disadvantages**
-| Disadvantage | Description |
-|-------------|-------------|
-| No Shell Features | Cannot use shell operators like pipes (`|`). |
-| Cannot Use Built-in Shell Commands | Commands like `cd` do not persist. |
-| Less Flexible | If shell features are needed, `shell` module must be used. |
-
+  ```
 ---
-# Ansible Playbook: Provision App VM and Run Application
+# Update and upgrade target nodes using the ad hoc commands:
 
-## Overview
-This playbook installs Node.js, clones an application from GitHub, installs dependencies, seeds the database, and starts the application on the target node.
-
-### **Filename**: `prov_app_with_npm_start.yml`
-
-## **Playbook**
-```yaml
-- name: Install app dependencies and run app
-  hosts: web
-  gather_facts: yes
-  become: yes
-
-  tasks:
-    - name: Install Node.js 20 and npm
-      ansible.builtin.shell: |
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-        apt-get install -y nodejs
-      args:
-        executable: /bin/bash
-
-    - name: Install npm
-      ansible.builtin.apt:
-        name: npm
-        state: present
-
-    - name: Clone the app from GitHub
-      ansible.builtin.git:
-        repo: "https://github.com/marmari9/tech501-sparta-app.git"
-        dest: /home/ubuntu/tech501-sparta-app
-        version: main  # Change branch name if needed
-        force: yes
-
-    - name: Install app dependencies without running seed script
-      ansible.builtin.command:
-        cmd: npm install --ignore-scripts
-        chdir: /home/ubuntu/tech501-sparta-app
-
-    - name: Manually seed the database
-      ansible.builtin.command:
-        cmd: node seeds/seed.js
-        chdir: /home/ubuntu/tech501-sparta-app
-
-    - name: Start the app with npm
-      ansible.builtin.command:
-        cmd: npm start
-        chdir: /home/ubuntu/tech501-sparta-app
-
-    - name: Allow traffic on port 3000
-      ansible.builtin.iptables:
-        chain: INPUT
-        protocol: tcp
-        destination_port: 3000
-        jump: ACCEPT
-```
-
-## **Explanation of Commands**
-- **Installs Node.js 18** (or change to Node.js 20 if required).
-- **Clones the app from GitHub** to the target node.
-- **Installs dependencies without triggering `seed.js` automatically.**
-- **Manually seeds the database** after dependency installation.
-- **Starts the application using `npm start`.**
-- **Ensures port 3000 is open** for external access.
-
-## **How to Run the Playbook**
-Execute the playbook from the **Ansible controller**:
-```bash
-ansible-playbook prov_app_with_npm_start.yml
-```
-
-## **Verification**
-After running the playbook, confirm that the app is running:
-```bash
-ansible web -m shell -a "curl http://localhost:3000"
-```
-If the app is running correctly, it should return an expected response.
-
-------------
-
-## Update and upgrade target nodes using the ad hoc commands:
-
-# Three Methods to Perform `apt update` and `apt upgrade` in Ansible
+## Three Methods to Perform `apt update` and `apt upgrade` in Ansible
 
 ## Method 1: Using the `command` Module
 This method runs commands without a shell. It does not support command chaining (`&&`) or environment variables.
@@ -406,7 +320,6 @@ ansible app -m apt -a "update_cache=yes upgrade=dist" --become
 | `apt` | Yes | Yes | Yes | Yes (best practice) |
 
 For production, the `apt` module is the best choice as it ensures efficient and secure package management.
-
 
 ---
 # Ansible Playbook: Install Nginx on Target Nodes
@@ -493,93 +406,142 @@ If Nginx is running, you should see output indicating that the service is **acti
 - nginnx is active and running on the target app node:
 
 
-![alt text](<active nginx.png>)
+![alt text](<images/active nginx.png>)
 
+# Ansible Playbook: Provision App VM and Run Application
 
-# Ansible Playbook: Provision app instance:
+This playbook installs **Node.js**, clones an application from GitHub, installs dependencies, seeds the database, and starts the application on target nodes belonging to the `web` group. It also ensures that traffic on **port 3000** is allowed.
 
-### Filename: prov_app_with_pm2.yml:
+### **Filename**: `prov_app_with_npm_start.yml`
 
-```yml
+## **Playbook Structure**
+```yaml
 ---
-- name: Install app dependencies and run app with PM2
+- name: Install app dependencies and run app
+  hosts: web
+  gather_facts: yes
+  become: yes  # Grants admin access (equivalent to sudo)
+
+  tasks:
+    - name: Install Node.js 20 and npm
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        apt-get install -y nodejs  # Installs Node.js 20
+      args:
+        executable: /bin/bash
+
+    - name: Install npm
+      ansible.builtin.apt:
+        name: npm
+        state: present  # Ensures npm is installed
+
+    - name: Clone the app from GitHub
+      ansible.builtin.git:
+        repo: "https://github.com/marmari9/tech501-sparta-app.git"
+        dest: /home/ubuntu/tech501-sparta-app
+        version: main  # Clones the main branch
+        force: yes  # Overwrites any existing content
+
+    - name: Install app dependencies without running seed script
+      ansible.builtin.command:
+        cmd: npm install --ignore-scripts  # Installs dependencies without executing scripts
+        chdir: /home/ubuntu/tech501-sparta-app
+
+    - name: Manually seed the database
+      ansible.builtin.command:
+        cmd: node seeds/seed.js  # Seeds the database
+        chdir: /home/ubuntu/tech501-sparta-app
+
+    - name: Start the app with npm
+      ansible.builtin.command:
+        cmd: npm start  # Starts the application
+        chdir: /home/ubuntu/tech501-sparta-app
+
+    - name: Allow traffic on port 3000
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 3000
+        jump: ACCEPT  # Ensures traffic can reach the application
+```
+
+## **Explanation of Commands**
+
+### **1️. Play Definition**
+```yaml
+- name: Install app dependencies and run app
   hosts: web
   gather_facts: yes
   become: yes
+```
+- **`name`** → Descriptive name for the play.
+- **`hosts: web`** → Runs the play on all machines in the `web` inventory group.
+- **`gather_facts: yes`** → Collects system information (useful for conditionals in playbooks).
+- **`become: yes`** → Grants admin privileges (`sudo`) for all tasks.
 
-  tasks:
-    - name: Install required system packages
-      ansible.builtin.apt:
-        name:
-          - curl
-          - git
-        state: present
-        update_cache: yes
-
+### **2️. Installing Node.js and npm**
+```yaml
     - name: Install Node.js 20 and npm
       ansible.builtin.shell: |
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         apt-get install -y nodejs
       args:
         executable: /bin/bash
+```
+- **Downloads Node.js 20 setup script** and installs Node.js.
+- **Uses `sudo -E`** to retain the environment variables.
 
-    - name: Install PM2 globally
-      community.general.npm:
-        name: pm2
-        global: yes
+### **3️. Installing npm**
+```yaml
+    - name: Install npm
+      ansible.builtin.apt:
+        name: npm
+        state: present
+```
+- **Ensures npm is installed** alongside Node.js.
 
-    - name: Ensure PM2 directory exists for ubuntu user
-      ansible.builtin.file:
-        path: /home/ubuntu/.pm2
-        state: directory
-        owner: ubuntu
-        group: ubuntu
-        mode: '0755'
-
-    - name: Clone the app repository from GitHub
+### **4️. Cloning the Application Repository**
+```yaml
+    - name: Clone the app from GitHub
       ansible.builtin.git:
         repo: "https://github.com/marmari9/tech501-sparta-app.git"
-        dest: /home/ubuntu/app
+        dest: /home/ubuntu/tech501-sparta-app
         version: main
         force: yes
+```
+- **`repo`** → Specifies the GitHub repository to clone.
+- **`dest`** → Defines where the repository should be cloned.
+- **`force: yes`** → Overwrites existing files if the repo already exists.
 
-    - name: Install app dependencies
+### **5️. Installing Dependencies Without Running Scripts**
+```yaml
+    - name: Install app dependencies without running seed script
       ansible.builtin.command:
-        cmd: npm install
-        chdir: /home/ubuntu/app
+        cmd: npm install --ignore-scripts
+        chdir: /home/ubuntu/tech501-sparta-app
+```
+- **Runs `npm install`** but skips executing any package scripts.
 
-    - name: Set DB_HOST environment variable (Permanent)
-      ansible.builtin.lineinfile:
-        path: /etc/environment
-        line: 'DB_HOST=mongodb://172.31.55.4:27017/posts'
-        create: yes
+### **6️. Seeding the Database**
+```yaml
+    - name: Manually seed the database
+      ansible.builtin.command:
+        cmd: node seeds/seed.js
+        chdir: /home/ubuntu/tech501-sparta-app
+```
+- **Runs the seed script manually** to populate the database.
 
-    - name: Reload system-wide environment variables
-      ansible.builtin.shell: "export $(cat /etc/environment | xargs)"
-      args:
-        executable: /bin/bash
-    - name: Seed the database automatically
-      ansible.builtin.shell: "node seeds/seed.js"
-      args:
-        chdir: /home/ubuntu/app
-      become_user: ubuntu
+### **7️. Starting the Application**
+```yaml
+    - name: Start the app with npm
+      ansible.builtin.command:
+        cmd: npm start
+        chdir: /home/ubuntu/tech501-sparta-app
+```
+- **Executes `npm start`** to launch the application.
 
-    - name: Start the app with PM2
-      ansible.builtin.shell: |
-        pm2 delete tech501-sparta-app || true
-        pm2 start npm --name tech501-sparta-app -- start
-        pm2 save
-      args:
-        chdir: /home/ubuntu/app
-      become_user: ubuntu
-
-    - name: Enable PM2 on system startup
-      ansible.builtin.shell: |
-        env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
-      args:
-        executable: /bin/bash
-      become: yes
-
+### **8️. Allowing Traffic on Port 3000**
+```yaml
     - name: Allow traffic on port 3000
       ansible.builtin.iptables:
         chain: INPUT
@@ -587,8 +549,25 @@ If Nginx is running, you should see output indicating that the service is **acti
         destination_port: 3000
         jump: ACCEPT
 ```
+- **Ensures incoming traffic on port 3000 is accepted** so the app can be accessed.
 
-# Task: print facts playbook:
+## **How to Run the Playbook**
+Execute the playbook from the **Ansible controller**:
+```bash
+ansible-playbook prov_app_with_npm_start.yml
+```
+
+## **Verification**
+After running the playbook, confirm that the app is running:
+```bash
+ansible web -m shell -a "curl http://localhost:3000"
+```
+If successful, the application should be accessible on **port 3000**.
+![alt text](<images/app page working on 3000.png>)
+
+------------
+
+## Task: print facts playbook:
 ```yml
 ---
 - name: Print gathered facts
@@ -604,15 +583,7 @@ If Nginx is running, you should see output indicating that the service is **acti
 
 - print facts about the app target node:
 
-  ![alt text](<print facts yml.png>)
-
-
-
-
-
-# Create Database target node:
-
-
+  ![alt text](<images/print facts yml.png>)
 
 
 # Update and upgrade the app and database target nodes:
@@ -637,79 +608,202 @@ If Nginx is running, you should see output indicating that the service is **acti
 ```
 
 
-  ![alt text](<app and db updates.png>)
+  ![alt text](<images/app and db updates.png>)
 
 
-# Create a playbook to install mongoDB:
 
-```yml 
+# Best Practices for Ansible Playbook Management
+
+## **Why Keep a Separate Playbook for Updates and Upgrades?**
+Maintaining a dedicated playbook for system updates and upgrades ensures better **control**, **modularity**, and **risk mitigation** in an automated deployment environment.
+
+### **1️. Granular Control**
+- **Specific actions** → A dedicated playbook helps clearly define update-related tasks.
+- **Testing and validation** → Updates can be tested in **staging environments** before rolling them out to production.
+
+### **2️. Modular Design**
+- **Reusability** → The update playbook can be executed independently whenever required.
+- **Role-based approaches** → Updates can be controlled separately for **web** and **database** nodes.
+
+### **3️. Risk Mitigation**
+- **Independent rollouts** → If an update causes issues, rollback is easier without affecting other components.
+- **Staging environment testing** → Ensures updates don’t disrupt production workloads.
+
+
+# Ansible Playbook: Install and Configure MongoDB
+
+This playbook installs and configures **MongoDB** on target nodes belonging to the `db` group. It ensures that the system is updated before installing MongoDB, modifies the configuration to allow remote access, and starts the database service.
+
+### **Filename**: `install_mongodb.yml`
+
+## **Playbook Structure**
+```yaml
 ---
-- name: Install app dependencies and run app
+- name: Install and configure MongoDB
   hosts: db
-  become: yes
+  gather_facts: yes
+  become: yes  # Grants admin access (equivalent to sudo)
+
   tasks:
-    - name: Import the MongoDB public key
+    - name: Import MongoDB public key
       ansible.builtin.apt_key:
-        url: https://pgp.mongodb.com/server-7.0.asc
-        state: present
+        url: https://www.mongodb.org/static/pgp/server-7.0.asc
+        state: present  # Ensures the MongoDB key is added for secure installation
 
-    - name: Add the MongoDB repository
+    - name: Add MongoDB repository
       ansible.builtin.apt_repository:
-        repo: "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu {{ ansible_facts['distribution_release'] }}/mongodb-org/7.0 multiverse"
-        state: present
-        filename: mongodb-org-7.0
+        repo: "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse"
+        state: present  # Adds the MongoDB repo to the system
+        filename: mongodb-org
 
-    - name: Install MongoDB 7.0
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes  # Refreshes package sources
+
+    - name: Install MongoDB
+      ansible.builtin.apt:
+        name: mongodb-org  # Installs the MongoDB package
+        state: present  # Ensures MongoDB is installed
+
+    - name: Allow connections from any IP
+      ansible.builtin.replace:
+        path: /etc/mongod.conf
+        regexp: 'bindIp: 127.0.0.1'
+        replace: 'bindIp: 0.0.0.0'  # Enables remote access to MongoDB
+
+    - name: Restart and enable MongoDB
+      ansible.builtin.service:
+        name: mongod  # Manages the MongoDB service
+        state: restarted  # Ensures MongoDB is running
+        enabled: yes  # Enables MongoDB to start on boot
+```
+
+## **Explanation of Commands**
+
+### **1️. Play Definition**
+```yaml
+- name: Install and configure MongoDB
+  hosts: db
+  gather_facts: yes
+  become: yes
+```
+- **`name`** → Descriptive name for the play.
+- **`hosts: db`** → Runs the play on all machines in the `db` inventory group.
+- **`gather_facts: yes`** → Collects system information (useful for conditionals in playbooks).
+- **`become: yes`** → Grants admin privileges (`sudo`) for all tasks.
+
+### **2️. Importing MongoDB Public Key**
+```yaml
+    - name: Import MongoDB public key
+      ansible.builtin.apt_key:
+        url: https://www.mongodb.org/static/pgp/server-7.0.asc
+        state: present
+```
+- **`apt_key`** → Adds MongoDB's public key to verify the package's authenticity.
+- **`state: present`** → Ensures the key is added before package installation.
+
+### **3️. Adding the MongoDB Repository**
+```yaml
+    - name: Add MongoDB repository
+      ansible.builtin.apt_repository:
+        repo: "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse"
+        state: present
+        filename: mongodb-org
+```
+- **`apt_repository`** → Adds MongoDB's official repository to package sources.
+- **`state: present`** → Ensures the repository is active for installation.
+
+### **4️. Installing MongoDB**
+```yaml
+    - name: Install MongoDB
       ansible.builtin.apt:
         name: mongodb-org
         state: present
-        update_cache: yes
+```
+- **`name: mongodb-org`** → Installs MongoDB from the added repository.
+- **`state: present`** → Ensures MongoDB is installed and not removed.
+
+### **5️. Enabling Remote Access**
+```yaml
+    - name: Allow connections from any IP
+      ansible.builtin.replace:
+        path: /etc/mongod.conf
+        regexp: 'bindIp: 127.0.0.1'
+        replace: 'bindIp: 0.0.0.0'
+```
+- **`replace`** → Modifies MongoDB’s configuration to allow external connections.
+- **`bindIp: 0.0.0.0`** → Allows MongoDB to accept connections from any IP address.
+
+### **6️. Restarting and Enabling MongoDB**
+```yaml
+    - name: Restart and enable MongoDB
+      ansible.builtin.service:
+        name: mongod
+        state: restarted
+        enabled: yes
+```
+- **`service`** → Ensures MongoDB is running and starts on boot.
+- **`state: restarted`** → Restarts MongoDB to apply configuration changes.
+- **`enabled: yes`** → Enables MongoDB to start automatically on reboot.
+
+## **How to Run the Playbook**
+Execute the playbook from the **Ansible controller**:
+```bash
+ansible-playbook install_mongodb.yml
 ```
 
+## **Verification**
+After running the playbook, confirm that MongoDB is installed and running:
+```bash
+ansible db -m shell -a "systemctl status mongod"
+```
+If MongoDB is running, you should see output indicating that the service is **active**.
 
-![alt text](<install mongodb 7.png>)
+- Playbook running successfuly.
+![alt text](<images/install mongodb 7.png>)
 
-![alt text](<verify mongodb install.png>)
+- MongoDB installed.
+![alt text](<images/verify mongodb install.png>)
 
-![alt text](<ad hoc mongod.png>)
+- Active MongoDB.
+![alt text](<images/ad hoc mongod.png>)
 
-![alt text](<ad hoc bindip.png>)
-
-
-
-- why keep a seperate playbook for updates and upgrades:
-  - Granular control: 
-    - specific actions: design dedicated tasks within the update/upgrade playbook.
-    - Testing and validation
-  - Modular design:
-    - Reusability: 
-    - Role based approaches: 
-  - Risk Mitigation:
-    - Independent rollouts: can roll back the changes when issues arise
-    - staging environment: update in staging before deploying to production. 
-  - 
+- Check the connection to port 27017.
+![alt text](<images/ad hoc bindip.png>)
 
 
-# Create a playbook that create the app and db :
-```yml 
+## **Ansible Playbook: Importing Multiple Playbooks**
+This playbook imports separate playbooks for **database** and **application** provisioning, ensuring modular deployment.
+
+### **Filename**: `deploy_app_and_db.yml`
+
+### **Playbook Structure**
+```yaml
 ---
-- import_playbook: prov-db.yml
-- import_playbook: prov_app_with_pm2.yml
+- import_playbook: prov-db.yml  # Imports the database provisioning playbook
+- import_playbook: prov_app_with_pm2.yml  # Imports the app provisioning playbook
 ```
 
+### **Why Use Importing?**
+- **Keeps roles separate** → The **database** and **application** provisioning are handled independently.
+- **Enhances reusability** → You can run individual playbooks separately when required.
+- **Improves debugging** → Errors in one playbook won’t necessarily affect others.
 
-- App web page and post page working on port 3000:
+---
 
+## **Application Web Page and Posts Page Running on Port 3000**
+Once provisioning is complete, the application should be accessible via **port 3000**.
 
-![alt text](<app page working on 3000.png>)
+### **Verification**
+![alt text](<images/app page working on 3000.png>)
 
-![alt text](<posts page working with ansible.png>)
+![alt text](<images/posts page working with ansible.png>)
 
+## **Ansible Playbook: Setting Up a Reverse Proxy with Nginx**
+To configure **Nginx** as a reverse proxy for the application, modify the **install_nginx.yml** playbook.
 
-
-- On the install_nginx.yml file update it to include the following to set the reverse proxy:
-
-```yml
+### **Reverse Proxy Configuration in `install_nginx.yml`**
+```yaml
     - name: Create Nginx reverse proxy configuration
       ansible.builtin.copy:
         dest: /etc/nginx/sites-available/app
@@ -719,7 +813,7 @@ If Nginx is running, you should see output indicating that the service is **acti
               server_name _;
 
               location / {
-                  proxy_pass http://localhost:3000/;
+                  proxy_pass http://localhost:3000/;  # Directs traffic to app running on port 3000
               }
           }
       notify: Restart Nginx
@@ -728,25 +822,35 @@ If Nginx is running, you should see output indicating that the service is **acti
       ansible.builtin.file:
         src: /etc/nginx/sites-available/app
         dest: /etc/nginx/sites-enabled/app
-        state: link
+        state: link  # Creates a symbolic link to activate the new config
       notify: Restart Nginx
 ```
 
-
-![alt text](<working with reverse proxy.png>)
-
-![alt text](<posts working with reverse proxy.png>)
+### **Verification**
+After running the playbook, verify the proxy setup:
 
 
+![alt text](<images/working with reverse proxy.png>)
 
+![alt text](<images/posts working with reverse proxy.png>)
 
-# Set a parent host file and set the app and db to children:
+## **Using Parent-Child Hosts in Ansible Inventory**
+To organize infrastructure, define a **parent host group** with child nodes for the **app** and **database** servers.
 
-![alt text](children_test.png)
+### **Example Inventory File (`hosts.ini`)**
+```ini
+[test:children]
+app
+db
+```
 
+### **Verifying Parent Group with Ansible Ping**
+```bash
+ansible test -m ping
+```
 
-- ping the parent <test>
+### **Verification Output**
 
-![alt text](<test parent ping.png>)
+![alt text](<images/test parent ping.png>)
 
 
