@@ -565,6 +565,218 @@ ansible web -m shell -a "curl http://localhost:3000"
 If successful, the application should be accessible on **port 3000**.
 ![alt text](<images/app page working on 3000.png>)
 
+
+
+# Ansible Playbook: Install and Run Application with PM2
+
+This playbook installs **Node.js 20**, **PM2**, and necessary dependencies, clones the application from GitHub, configures the database connection, and starts the app using **PM2** for process management.
+
+### **Filename**: `prov_app_with_pm2.yml`
+
+## **Playbook Structure**
+```yaml
+---
+- name: Install app dependencies and run app with PM2
+  hosts: web
+  gather_facts: yes
+  become: yes  # Grants admin access (equivalent to sudo)
+
+  tasks:
+    - name: Install required system packages
+      ansible.builtin.apt:
+        name:
+          - curl  # Required for downloading Node.js setup script
+          - git  # Required for cloning the application repository
+        state: present
+        update_cache: yes  # Refreshes the package list
+
+    - name: Install Node.js 20 and npm
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        apt-get install -y nodejs  # Installs Node.js 20
+      args:
+        executable: /bin/bash
+
+    - name: Install PM2 globally
+      community.general.npm:
+        name: pm2
+        global: yes  # Installs PM2 globally to manage processes
+
+    - name: Ensure PM2 directory exists for ubuntu user
+      ansible.builtin.file:
+        path: /home/ubuntu/.pm2  # PM2 directory for process management
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Clone the app repository from GitHub
+      ansible.builtin.git:
+        repo: "https://github.com/marmari9/tech501-sparta-app.git"
+        dest: /home/ubuntu/app  # Clones into /home/ubuntu/app
+        version: main  # Clones the main branch
+        force: yes  # Overwrites existing repo if necessary
+
+    - name: Install app dependencies
+      ansible.builtin.command:
+        cmd: npm install  # Installs required dependencies from package.json
+        chdir: /home/ubuntu/app
+
+    - name: Set DB_HOST environment variable (Permanent)
+      ansible.builtin.lineinfile:
+        path: /etc/environment  # Adds the environment variable to system-wide configuration
+        line: 'DB_HOST=mongodb://172.31.55.4:27017/posts'
+        create: yes
+
+    - name: Reload system-wide environment variables
+      ansible.builtin.shell: "export $(cat /etc/environment | xargs)"
+      args:
+        executable: /bin/bash
+
+    - name: Seed the database automatically
+      ansible.builtin.shell: "node seeds/seed.js"  # Runs the database seeding script
+      args:
+        chdir: /home/ubuntu/app
+      become_user: ubuntu
+
+    - name: Start the app with PM2
+      ansible.builtin.shell: |
+        pm2 delete tech501-sparta-app || true  # Deletes the existing PM2 process (if any)
+        pm2 start npm --name tech501-sparta-app -- start  # Starts the app with PM2
+        pm2 save  # Saves PM2 process list to be restarted automatically
+      args:
+        chdir: /home/ubuntu/app
+      become_user: ubuntu
+
+    - name: Enable PM2 on system startup
+      ansible.builtin.shell: |
+        env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+      args:
+        executable: /bin/bash
+      become: yes
+
+    - name: Allow traffic on port 3000
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 3000
+        jump: ACCEPT  # Ensures incoming traffic on port 3000 is accepted
+```
+
+## **Explanation of Commands**
+
+### **1️. Installing Required System Packages**
+```yaml
+    - name: Install required system packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - git
+        state: present
+        update_cache: yes
+```
+- **Installs `curl`** for fetching the Node.js setup script.
+- **Installs `git`** for cloning the application repository.
+
+### **2️. Installing Node.js and npm**
+```yaml
+    - name: Install Node.js 20 and npm
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        apt-get install -y nodejs
+      args:
+        executable: /bin/bash
+```
+- **Fetches and installs Node.js 20** using the official setup script.
+- **Uses `sudo -E`** to retain the environment variables.
+
+### **3️. Installing PM2 Globally**
+```yaml
+    - name: Install PM2 globally
+      community.general.npm:
+        name: pm2
+        global: yes
+```
+- **Installs PM2** as a global package to manage application processes.
+
+### **4️. Cloning the Application Repository**
+```yaml
+    - name: Clone the app repository from GitHub
+      ansible.builtin.git:
+        repo: "https://github.com/marmari9/tech501-sparta-app.git"
+        dest: /home/ubuntu/app
+        version: main
+        force: yes
+```
+- **Downloads the application code** into `/home/ubuntu/app`.
+
+### **5️. Installing Application Dependencies**
+```yaml
+    - name: Install app dependencies
+      ansible.builtin.command:
+        cmd: npm install
+        chdir: /home/ubuntu/app
+```
+- **Installs required dependencies** from `package.json`.
+
+### **6️. Setting Database Environment Variable**
+```yaml
+    - name: Set DB_HOST environment variable (Permanent)
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: 'DB_HOST=mongodb://172.31.55.4:27017/posts'
+        create: yes
+```
+- **Defines `DB_HOST` globally** so the application can connect to MongoDB.
+
+### **7️. Seeding the Database**
+```yaml
+    - name: Seed the database automatically
+      ansible.builtin.shell: "node seeds/seed.js"
+      args:
+        chdir: /home/ubuntu/app
+      become_user: ubuntu
+```
+- **Runs the database seed script** to populate initial records.
+
+### **8️. Starting the Application with PM2**
+```yaml
+    - name: Start the app with PM2
+      ansible.builtin.shell: |
+        pm2 delete tech501-sparta-app || true
+        pm2 start npm --name tech501-sparta-app -- start
+        pm2 save
+      args:
+        chdir: /home/ubuntu/app
+      become_user: ubuntu
+```
+- **Deletes any existing PM2 process** to avoid conflicts.
+- **Starts the application using `npm start`**.
+- **Saves the PM2 process** to ensure it restarts after reboots.
+
+### **9️. Enabling PM2 on System Startup**
+```yaml
+    - name: Enable PM2 on system startup
+      ansible.builtin.shell: |
+        env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+      args:
+        executable: /bin/bash
+      become: yes
+```
+- **Ensures PM2 runs automatically** when the system reboots.
+
+## **How to Run the Playbook**
+Execute the playbook from the **Ansible controller**:
+```bash
+ansible-playbook prov_app_with_pm2.yml
+```
+
+## **Verification**
+After running the playbook, check if the application is running:
+```bash
+pm list -g | grep pm2
+pm2 list
+```
 ------------
 
 ## Task: print facts playbook:
@@ -585,50 +797,7 @@ If successful, the application should be accessible on **port 3000**.
 
   ![alt text](<images/print facts yml.png>)
 
-
-# Update and upgrade the app and database target nodes:
-
-```yml 
----
-- name: Update and Upgrade Packages on Web and DB
-  hosts: web, db
-  become: yes
-  tasks:
-    - name: Update package cache
-      ansible.builtin.apt:
-        update_cache: yes
-
-    - name: Upgrade all packages
-      ansible.builtin.apt:
-        upgrade: full
-
-    - name: Autoremove unnecessary packages
-      ansible.builtin.apt:
-        autoremove: yes
-```
-
-
-  ![alt text](<images/app and db updates.png>)
-
-
-
-# Best Practices for Ansible Playbook Management
-
-## **Why Keep a Separate Playbook for Updates and Upgrades?**
-Maintaining a dedicated playbook for system updates and upgrades ensures better **control**, **modularity**, and **risk mitigation** in an automated deployment environment.
-
-### **1️. Granular Control**
-- **Specific actions** → A dedicated playbook helps clearly define update-related tasks.
-- **Testing and validation** → Updates can be tested in **staging environments** before rolling them out to production.
-
-### **2️. Modular Design**
-- **Reusability** → The update playbook can be executed independently whenever required.
-- **Role-based approaches** → Updates can be controlled separately for **web** and **database** nodes.
-
-### **3️. Risk Mitigation**
-- **Independent rollouts** → If an update causes issues, rollback is easier without affecting other components.
-- **Staging environment testing** → Ensures updates don’t disrupt production workloads.
-
+----- 
 
 # Ansible Playbook: Install and Configure MongoDB
 
@@ -770,6 +939,50 @@ If MongoDB is running, you should see output indicating that the service is **ac
 
 - Check the connection to port 27017.
 ![alt text](<images/ad hoc bindip.png>)
+
+# Update and upgrade the app and database target nodes:
+
+```yml 
+---
+- name: Update and Upgrade Packages on Web and DB
+  hosts: web, db
+  become: yes
+  tasks:
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: full
+
+    - name: Autoremove unnecessary packages
+      ansible.builtin.apt:
+        autoremove: yes
+```
+
+
+  ![alt text](<images/app and db updates.png>)
+
+
+
+# Best Practices for Ansible Playbook Management
+
+## **Why Keep a Separate Playbook for Updates and Upgrades?**
+Maintaining a dedicated playbook for system updates and upgrades ensures better **control**, **modularity**, and **risk mitigation** in an automated deployment environment.
+
+### **1️. Granular Control**
+- **Specific actions** → A dedicated playbook helps clearly define update-related tasks.
+- **Testing and validation** → Updates can be tested in **staging environments** before rolling them out to production.
+
+### **2️. Modular Design**
+- **Reusability** → The update playbook can be executed independently whenever required.
+- **Role-based approaches** → Updates can be controlled separately for **web** and **database** nodes.
+
+### **3️. Risk Mitigation**
+- **Independent rollouts** → If an update causes issues, rollback is easier without affecting other components.
+- **Staging environment testing** → Ensures updates don’t disrupt production workloads.
+
 
 
 ## **Ansible Playbook: Importing Multiple Playbooks**
