@@ -1,3 +1,26 @@
+# Table of Contents
+
+## **Ansible Fundamentals**
+- [Ansible Overview](#ansible-overview)
+- [Infrastructure as Code (IaC)](#infrastructure-as-code-iac)
+- [Configuration Management (CM)](#configuration-management-cm)
+
+## **Setting Up Ansible**
+- [Creating EC2 Instances](#creating-ec2-instances-for-ansible)
+- [Configuring the Controller](#set-up-dependincies-on-the-controller-instance)
+- [Connecting to Target Nodes](#connect-the-controller-to-the-target-node)
+
+## **Key Ansible Playbooks**
+- [Install Nginx](#ansible-playbook-install-nginx-on-target-nodes)
+- [Deploy Application](#ansible-playbook-provision-app-vm-and-run-application)
+- [Manage Database](#ansible-playbook-install-and-configure-mongodb)
+- [Update & Upgrade Nodes](#update-and-upgrade-the-app-and-database-target-nodes)
+
+## **Best Practices**
+- [Modular Playbook Structure](#ansible-playbook-importing-multiple-playbooks)
+- [Managing Ansible Inventory](#using-parent-child-hosts-in-ansible-inventory)
+- [Security & SSH Keys](#copying-a-private-key-to-the-target-node-using-ansible)
+
 # Ansible Research
 
 ## Infrastructure as Code (IaC)
@@ -154,7 +177,7 @@ This section outlines the steps to create and configure EC2 instances for Ansibl
 ### **Instance Details**
 - **Name**: `tech501-maram-ubuntu-2204-ansible-node-db`
 - **Instance Type**: `t3.micro`
-- **Security Group**: Same as usual for a database (allow SSH and MongoDB ports as needed)
+- **Security Group**: Same as usual for a database (allow SSH(22) and MongoDB (27017) ports)
 - **Key Pair**: Use the same AWS key pair as the controller and application node
 - **AMI**: `Ubuntu Server 22.04 LTS`
 - **User Data**: Leave it blank
@@ -209,7 +232,7 @@ ansible ec2-instance-app -m file -a "path=/home/ubuntu/.ssh state=directory mode
 ### 3️. Copy the Private Key to the Target Node
 Use the `copy` module to transfer the key file:
 ```bash
-ansible ec2-instance-app -m copy -a "src=/home/ubuntu/path/to/private/key dest=/home/ubuntu/.ssh/<private-key> mode=0600 owner=ubuntu group=ubuntu" --become
+ansible ec2-instance-app -m copy -a "src=/home/ubuntu/path/to/private/key dest=/home/ubuntu/.ssh/<private-key> mode=0400 owner=ubuntu group=ubuntu" --become
 ```
 
 ### 4️. Verify the Key is Copied Successfully
@@ -799,6 +822,28 @@ pm2 list
 
 ----- 
 
+
+## **Updating the Ansible Hosts File**
+Edit the Ansible **hosts** file to include the database instance:
+```bash
+sudo nano /etc/ansible/hosts
+```
+
+### **Modify the File to Include Web and Database Instances**
+```ini
+[web]
+ec2-instance-app ansible_host=34.255.124.208 ansible_user=ubuntu ansible_private_key_file=~/.ssh/tech501-maram-key-2.pem
+
+[db]
+ec2-instance-db ansible_host=<PUBLIC_IP_ADDRESS_FOR_DB> ansible_user=ubuntu ansible_private_key_file=~/.ssh/tech501-maram-key-2.pem
+```
+- **Replace `<PUBLIC_IP_ADDRESS_FOR_DB>`** with the 
+actual public IP of the database instance.
+
+- ping app and db:
+![alt text](<ping app and db.png>)
+
+
 # Ansible Playbook: Install and Configure MongoDB
 
 This playbook installs and configures **MongoDB** on target nodes belonging to the `db` group. It ensures that the system is updated before installing MongoDB, modifies the configuration to allow remote access, and starts the database service.
@@ -963,7 +1008,6 @@ If MongoDB is running, you should see output indicating that the service is **ac
 
 
   ![alt text](<images/app and db updates.png>)
-
 
 
 # Best Practices for Ansible Playbook Management
